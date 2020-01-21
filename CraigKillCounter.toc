@@ -1,4 +1,4 @@
-## Interface: TODO
+## Interface: 11303
 ## Title : CraigKillCounter
 ## Notes: ...
 ## Author: Craig's Healer
