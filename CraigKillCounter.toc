@@ -1,0 +1,9 @@
+## Interface: TODO
+## Title : CraigKillCounter
+## Notes: ...
+## Author: Craig's Healer
+## Version: 0.0.1
+## Dependencies: 
+## SavedVariablesPerCharacter: CraigKillCounterPrefs
+
+CraigKillCounter.lua
