@@ -1,0 +1,10 @@
+TODO
+
+- CraigKillCounter_OnLoad
+  - init DB
+  - init chat API
+    - print deaths this raid
+    - print deaths from all raids
+- when joining raid or when player joins raid
+  - if Craig is included, listen for his health changes
+    - messages to /raid at health % & at death
