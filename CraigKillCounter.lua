@@ -1,74 +1,90 @@
 CraigKillCounter = {};
-CraigKillCounter.loaded = false;
-CraigKillCounter.target = 'Piznimp';
-CraigKillCounter.target_guid = '';
+CraigKillCounter.target = 'Craig';
+CraigKillCounter.targetGUID = "";
+CraigKillCounter.targetLastHealth = nil;
 
--- 1. detect if Craig is in party/raid
---     - set his GUID aside when he's active
---         - print(UnitGUID(...));
--- 2. on COMBAT_LOG_EVENT_UNFILTERED for player's GUID:
---     - watch health, notify when low, record when dead
+-- TODOS
+-- 1. save death count / source & log low health / death messages
+-- 2. set targetGUID from target found in party/raid, unset when me or target leaves party/raid
+--      currently using player as target
 
+-- dev: set targetGUID to player on PLAYER_LOGIN for testing
+-- prod: set targetGUID to Craig's GUID when detected he's in party. unset targetGUID when he or i leave party
 
-function CraigKillCounter.OnMemberUpdate()
-    if not IsInGroup() then
-        return
+function CraigKillCounter:HandleTargetHealthChange(health)
+    local maxHealth = UnitHealthMax(CraigKillCounter.target);
+    local healthPercent = (health / maxHealth) * 100;
+
+    --print("health: " .. health);
+    --print("maxHealth: " .. maxHealth);
+    --print("healthPercent: " .. healthPercent);
+    --print("-------------------");
+
+    if (health <= 0) then
+        SendChatMessage("OH HE DEAD" ,"YELL" ,"COMMON");
+        -- TODO: increment death count & log reason
+    elseif (healthPercent <= 20) then
+        -- TODO: low health message
+        SendChatMessage("CRAIG BOUT TO DIE" ,"YELL" ,"COMMON");
     end
+end
 
+function CraigKillCounter:HandleGroupRosterUpdate()
+    print("searching for targetGUID");
+    -- find the target by name in the party and set the targetGUID
     for n=1, GetNumSubgroupMembers() do
         local pname = UnitName("Party"..n);
         if pname == CraigKillCounter.target then
             local pguid = UnitGUID(pname);
-
-            if not pguid == CraigKillCounter.target_guid then
-                print('setting target_guid ' ... pguid);
-                CraigKillCounter.target_guid = pguid;
+            if (not pguid == CraigKillCounter.targetGUID) then
+                CraigKillCounter.targetGUID = pguid;
+                print("targetGUID: " .. pguid);
             end
-
             return;
         end
-	end
-
-    -- didn't find target so unset guid
-    print('unsetting target_guid');
-    CraigKillCounter.target_guid = '';
+    end
+    
+    -- didn't find target so we should unset targetGUID
+    CraigKillCounter.targetGUID = nil;
 end
 
-function CraigKillCounter.OnCombatEvent(...)
-    -- skip if target_guid isn't set
-    if CraigKillCounter.target_guid == '' then
+function CraigKillCounter:HandlePlayerLogin()
+    -- can get the guid and max health using the player's name
+    CraigKillCounter.targetGUID = UnitGUID("player");
+    print("targetGUID: " .. CraigKillCounter.targetGUID);
+end
+
+function CraigKillCounter:HandleCombatEvent()
+    if (CraigKillCounter.targetGUID == nil) then
         return;
     end
+    
+    -- if destGUID matches targetGUID
+    -- then get health of the unit and
+    -- notify health or record death if needed
 
-    local time, event, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags = ...;
+    local timestamp, event, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags = CombatLogGetCurrentEventInfo();
 
-    -- print(CraigKillCounter.target_guid);
-    -- print(sourceGUID);
+    -- if ((not destName == nil) and (destGUID == CraigKillCounter.targetGUID)) then
+    if (destName == CraigKillCounter.target) then
+        local health = UnitHealth(destName);
 
-    -- skip if not affecting target
-    if not destGUID == CraigKillCounter.target_guid then
-        return;
+        if not (health == CraigKillCounter.targetLastHealth) then
+            CraigKillCounter:HandleTargetHealthChange(health);
+        end
+
+        CraigKillCounter.targetLastHealth = health;
     end
-
-    -- local health = UnitHealth(CraigKillCounter.target_guid);
-    -- print(health);
 end
 
 function CraigKillCounter.OnEvent(frame, event, ...)
-    if event == 'GROUP_ROSTER_UPDATE' then
-        CraigKillCounter.OnMemberUpdate();
-    elseif event == 'COMBAT_LOG_EVENT_UNFILTERED' then
-        local time, event, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags = ...;
-        print(time);
-        print(event);
-        print(sourceGUID);
-        print(sourceName);
-        print(sourceFlags);
-        print(destGUID);
-        print(destName);
-        print(destFlags);
-        -- CraigKillCounter.OnCombatEvent(...);
-    end;
+    if (event == "COMBAT_LOG_EVENT_UNFILTERED") then
+        CraigKillCounter:HandleCombatEvent();
+    elseif (event == "GROUP_ROSTER_UPDATE") then
+        CraigKillCounter:HandleGroupRosterUpdate();
+    elseif (event == "PLAYER_LOGIN") then
+        CraigKillCounter:HandlePlayerLogin();
+    end
 end
 
 CraigKillCounter.EventFrame = CreateFrame("Frame");
@@ -76,3 +92,4 @@ CraigKillCounter.EventFrame:Show();
 CraigKillCounter.EventFrame:SetScript("OnEvent", CraigKillCounter.OnEvent);
 CraigKillCounter.EventFrame:RegisterEvent("GROUP_ROSTER_UPDATE");
 CraigKillCounter.EventFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED");
+--CraigKillCounter.EventFrame:RegisterEvent("PLAYER_LOGIN");
