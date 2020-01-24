@@ -1,29 +1,60 @@
 CraigKillCounter = {};
-CraigKillCounter.target = 'Craig';
+CraigKillCounter.target = "Areiz";
 CraigKillCounter.targetGrouped = false;
 CraigKillCounter.targetLastHealth = nil;
+CraigKillCounter.currentDeaths = {};
+CraigKillCounter.currentInstance = "";
+CraigKillCounter.currentTimestamp = nil;
+
+CraigKillCounterMCDeaths = {};
+CraigKillCounterONYDeaths = {};
+
+-- MoltenCore: {
+--     timestamp1: 2
+--     timestamp2: 4,
+-- },
+-- Onyxia: {
+--     timestamp1: 1,
+--     timestamp2: 4
+-- }
+
 
 -- TODOS
--- 1. save death count / source
 -- 2. randomized messages
 -- 3. slash commands
--- 4. search entire raid if in raid, search party if in party
+
+-- TESTS
+-- 1. If GetNumRaidMembers works
+--    /run for n=1, GetNumGroupMembers() do print(UnitName("Raid"..n));end
+-- 2. If SavedVariables works in raid & party
 
 function CraigKillCounter:HandleTargetHealthChange(health)
     local maxHealth = UnitHealthMax(CraigKillCounter.target);
     local healthPercent = (health / maxHealth) * 100;
 
     if (health <= 0) then
-        SendChatMessage("OH HE DEAD" ,"YELL" ,"COMMON");
-        -- TODO: increment death count & log reason
+        SendChatMessage("Near, far, wherever you are" ,"YELL" ,"COMMON");
+        SendChatMessage("I believe that the heart does, go on" ,"YELL" ,"COMMON");
+        SendChatMessage("Once more you open the door" ,"YELL" ,"COMMON");
+        SendChatMessage("And you're here in my heart" ,"YELL" ,"COMMON");
+        SendChatMessage("And my heart will go on, and on" ,"YELL" ,"COMMON");
+        if (CraigKillCounter.currentInstance == "Molten Core") then
+            if (CraigKillCounter.currentDeaths[CraigKillCounter.currentTimestamp] == nil) then
+                CraigKillCounter.currentDeaths[CraigKillCounter.currentTimestamp] = 0;
+            end
+            if (CraigKillCounterMCDeaths[timestamp] == nil) then
+                CraigKillCounterMCDeaths[timestamp] = 0;
+            end
+            CraigKillCounter.currentDeaths[CraigKillCounter.currentTimestamp] += 1;
+        end
     elseif (healthPercent <= 20) then
-        SendChatMessage("CRAIG BOUT TO DIE" ,"YELL" ,"COMMON");
+        -- SendChatMessage(CraigKillCounter.target.." BOUT TO DIE" ,"YELL" ,"COMMON");
     end
 end
 
 function CraigKillCounter:HandleGroupRosterUpdate()
-    for n=1, GetNumSubgroupMembers() do
-        local pname = UnitName("Party"..n);
+    for n=1, GetNumGroupMembers() do
+        local pname = UnitName("Raid"..n);
         if pname == CraigKillCounter.target then
             CraigKillCounter.targetGrouped = true;
             return;
@@ -38,6 +69,9 @@ function CraigKillCounter:HandleCombatEvent()
     if (CraigKillCounter.targetFound == false) then
         return;
     end
+    if (CraigKillCounter.currentInstance == "") then
+        return;
+    end
 
     local timestamp, event, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags = CombatLogGetCurrentEventInfo();
 
@@ -50,11 +84,24 @@ function CraigKillCounter:HandleCombatEvent()
     end
 end
 
+function CraigKillCounter:HandlePlayerEnteringWorld(isInitialLogin, isReloadingUi)
+    local zoneText = GetRealZoneText();
+    if ((zoneText == "Molten Core") or (zoneText == "Onyxia's Lair")) then
+        CraigKillCounter.currentInstance = zoneText;
+        CraigKillCounter.currentTimestamp = time();
+    else
+        CraigKillCounter.currentInstance = "";
+        CraigKillCounter.currentTimestamp = nil;
+    end
+end
+
 function CraigKillCounter.OnEvent(frame, event, ...)
     if (event == "COMBAT_LOG_EVENT_UNFILTERED") then
         CraigKillCounter:HandleCombatEvent();
     elseif (event == "GROUP_ROSTER_UPDATE") then
         CraigKillCounter:HandleGroupRosterUpdate();
+    elseif (event == "PLAYER_ENTERING_WORLD") then
+        CraigKillCounter:HandlePlayerEnteringWorld(...);
     end
 end
 
@@ -63,3 +110,4 @@ CraigKillCounter.EventFrame:Show();
 CraigKillCounter.EventFrame:SetScript("OnEvent", CraigKillCounter.OnEvent);
 CraigKillCounter.EventFrame:RegisterEvent("GROUP_ROSTER_UPDATE");
 CraigKillCounter.EventFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED");
+CraigKillCounter.EventFrame:RegisterEvent("PLAYER_ENTERING_WORLD");

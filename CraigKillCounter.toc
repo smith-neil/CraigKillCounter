@@ -4,6 +4,6 @@
 ## Author: Craig's Healer
 ## Version: 0.0.1
 ## Dependencies: 
-## SavedVariablesPerCharacter: CraigKillCounterPrefs
+## SavedVariablesPerCharacter: CraigKillCounterMCDeaths, CraigKillCounterONYDeaths
 
 CraigKillCounter.lua
