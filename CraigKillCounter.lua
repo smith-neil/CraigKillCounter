@@ -1,5 +1,5 @@
 CraigKillCounter = {};
-CraigKillCounter.target = "Areiz";
+CraigKillCounter.target = "Craig";
 CraigKillCounter.targetGrouped = false;
 CraigKillCounter.targetLastHealth = nil;
 CraigKillCounter.currentDeaths = {};
